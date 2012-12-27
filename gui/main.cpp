@@ -1,6 +1,5 @@
-#include <QtGui/QApplication>
+#include <QApplication>
 #include <QtDebug>
-#include <QCleanlooksStyle>
 #include <QFile>
 #include <QDateTime>
 #include "mainwindow.h"
@@ -34,7 +33,7 @@ int main(int argc, char *argv[])
     QSettings settings("settings.ini", QSettings::IniFormat);
     int logLevel;
 
-    a.setStyle("plastique");
+    a.setStyle("fusion");
 
     // init the logging mechanism
     QsLogging::Logger& logger = QsLogging::Logger::instance();

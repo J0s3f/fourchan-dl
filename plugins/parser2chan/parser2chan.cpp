@@ -161,6 +161,3 @@ QMap<QString, QString> Parser2chan::getSupportedReplaceCharacters() {
 
     return ret;
 }
-
-
-Q_EXPORT_PLUGIN2(pParser2chan, Parser2chan)

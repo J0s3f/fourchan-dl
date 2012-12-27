@@ -167,7 +167,7 @@ ParsingStatus Parser4chan::parseHTML(QString html) {
             while (pos > -1) {
                 pos = rxImagesOld.indexIn(html, pos+1);
                 res = rxImagesOld.capturedTexts();
-                QUrl temp = QUrl::fromEncoded(res.at(1).toAscii());
+                QUrl temp = QUrl::fromEncoded(res.at(1).toLatin1());
 
                 i.originalFilename = temp.toString();
                 i.largeURI = "http://images.4chan.org/"+res.at(3);
@@ -250,4 +250,3 @@ QMap<QString, QString> Parser4chan::getSupportedReplaceCharacters() {
     return ret;
 }
 
-Q_EXPORT_PLUGIN2(pParser4chan, Parser4chan)

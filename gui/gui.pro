@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui network xml
+QT       += core gui network xml widgets
 
 win32:TARGET = ../../fourchan-dl
 else:TARGET = ../fourchan-dl
@@ -82,7 +82,7 @@ macx: ICON = resources/fourchan-dl.icns
 BUILDDATE = __DATE__
 DEFINES += BUILDDATE=$${BUILDDATE} PROGRAM_VERSION="\\\"1.4.3\\\""
 
-win32: LIBS += libole32
+win32: LIBS += ole32.lib
 
 OTHER_FILES += \
     readme.txt \

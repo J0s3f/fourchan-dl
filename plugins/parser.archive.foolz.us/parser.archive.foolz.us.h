@@ -11,6 +11,7 @@
 class ParserArchiveFoolzUs : public QObject, public ParserPluginInterface {
     Q_OBJECT
     Q_INTERFACES(ParserPluginInterface)
+    Q_PLUGIN_METADATA(IID "ParserArchiveFoolzUs" FILE "parser.archive.foolz.us.json")
 
 public:
     ParserArchiveFoolzUs();

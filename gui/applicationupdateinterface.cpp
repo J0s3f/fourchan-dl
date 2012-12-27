@@ -136,7 +136,7 @@ void ApplicationUpdateInterface::writeCommand(int c, QByteArray a) {
 }
 
 void ApplicationUpdateInterface::writeCommand(int c, QString s) {
-    writeCommand(c, s.toAscii());
+    writeCommand(c, s.toLatin1());
 }
 
 void ApplicationUpdateInterface::writeCommand(int c) {

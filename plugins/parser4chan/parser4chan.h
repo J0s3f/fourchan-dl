@@ -11,6 +11,7 @@
 class Parser4chan : public QObject, public ParserPluginInterface {
     Q_OBJECT
     Q_INTERFACES(ParserPluginInterface)
+    Q_PLUGIN_METADATA(IID "Parser4chan" FILE "parser4chan.json")
 
 public:
     Parser4chan();
