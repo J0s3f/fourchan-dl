@@ -22,6 +22,8 @@
 
 #include <QtGlobal>
 #include <QWidget>
+#include <QtGui>
+#include <QtWidgets>
 
 // Windows only data definitions
 #ifdef Q_OS_WIN
@@ -133,7 +135,7 @@ public:
     void setProgressState(ToolBarProgressState state);
 
 private:
-    WId mWindowId;
+    HWND mWindowId;
 #ifdef Q_OS_WIN
     UINT mTaskbarMessageId;
     ITaskbarList3 *mTaskbar;

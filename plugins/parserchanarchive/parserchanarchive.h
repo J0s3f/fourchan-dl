@@ -11,6 +11,7 @@
 class ParserChanArchive : public QObject, public ParserPluginInterface {
     Q_OBJECT
     Q_INTERFACES(ParserPluginInterface)
+    Q_PLUGIN_METADATA(IID "ParserChanArchive" FILE "parserchanarchive.json")
 
 public:
     ParserChanArchive();

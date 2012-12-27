@@ -263,8 +263,8 @@
    <property name="statusTip">
     <string>History of closed threads</string>
    </property>
-   <property name="softKeyRole">
-    <enum>QAction::PositiveSoftKey</enum>
+   <property name="shortcut">
+    <string>Ctrl+H</string>
    </property>
   </action>
   <action name="actionExit">

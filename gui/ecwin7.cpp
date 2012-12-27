@@ -37,7 +37,8 @@ EcWin7::EcWin7()
 // Init taskbar communication
 void EcWin7::init(WId wid)
 {
-    mWindowId = wid;
+  //QPlatformNativeInterface *native = QGuiApplication::platformNativeInterface();
+    mWindowId = reinterpret_cast<HWND>(wid);
 #ifdef Q_OS_WIN
     mTaskbarMessageId = RegisterWindowMessage(L"TaskbarButtonCreated");
 #endif

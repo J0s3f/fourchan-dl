@@ -166,4 +166,4 @@ QMap<QString, QString> ParserArchiveFoolzUs::getSupportedReplaceCharacters() {
     return ret;
 }
 
-Q_EXPORT_PLUGIN2(pParserArchiveFoolzUs, ParserArchiveFoolzUs)
+

@@ -178,4 +178,3 @@ QMap<QString, QString> ParserChanArchive::getSupportedReplaceCharacters() {
     return ret;
 }
 
-Q_EXPORT_PLUGIN2(pParserChanArchive, ParserChanArchive)
