@@ -300,16 +300,17 @@ void DownloadManager::handleError(qint64 uid, QNetworkReply* r) {
         break;
 
     case 301:   // Service unavailable
-        QLOG_INFO() << "DownloadManager :: " << "Service unavailable";
-        emit error("Service unavailable");
+        QLOG_INFO() << "DownloadManager :: " << "Service unavailable" << r->url().host();
+        emit error(QString("%1: Service unavailable").arg(r->url().host()));
         // Pause downloading to let the server relax
-        pauseDownloads();
+//        pauseDownloads();
         // Abort all downloads
-        foreach (QNetworkReply* r, activeReplies) {
-            r->abort();
-        }
+//        foreach (QNetworkReply* r, activeReplies) {
+//            r->abort();
+//        }
 
-        waitTimer->start();
+//        waitTimer->start();
+        reschedule(uid);
         break;
     case 205:
     case 99:
@@ -359,7 +360,7 @@ void DownloadManager::reschedule(qint64 uid) {
 
         // "decrease priority for rescheduled downloads"
         priorities.remove(prio, uid);
-        prio++;
+        prio+=10;
         QLOG_INFO() << "DownloadManager :: " << uid << ":" << "setting new priority" << prio;
         dr->setPriority(prio);
         priorities.insertMulti(prio,uid);
@@ -459,4 +460,17 @@ void DownloadManager::setMaxPriority(int mp) {
     if (!downloadsPaused) {
         processRequests();
     }
+}
+
+QMap<qint64, QString> DownloadManager::getPendingRequestMap() {
+    QMap<qint64, QString> ret;
+    QHashIterator<qint64, DownloadRequest*>  requests(requestList);
+
+    while (requests.hasNext()) {
+        requests.next();
+
+        ret.insertMulti(requests.value()->priority(), requests.value()->url().toString());
+    }
+
+    return ret;
 }
