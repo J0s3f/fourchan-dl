@@ -8,6 +8,11 @@
 #include <QByteArray>
 #include <QString>
 
+#ifdef ERROR
+#define ERRBKK ERROR
+#undef ERROR
+#endif
+
 enum COMMANDS { PING=0,
                 PONG,
                 CLEAR,          // Clear all settings / file information
@@ -24,7 +29,10 @@ enum COMMANDS { PING=0,
                 GET_VERSION,
                 VERSION
               };
-
+#ifdef ERRBKK
+#define ERROR ERRBKK
+#undef ERRBKK
+#endif
 QByteArray createCommand(int c, QByteArray a);
 QByteArray createCommand(int c, QString s);
 QByteArray createCommand(int c);
