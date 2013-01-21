@@ -107,7 +107,20 @@ void checkEnvironment() {
     pluginDir.setPath(dir.path()+"/plugins");
 
 #ifdef Q_OS_WIN32
-    neededFiles << "QtCore4.dll" << "QtNetwork4.dll" << "mingwm10.dll" << "libgcc_s_dw2-1.dll" << "au.exe" << "upd4t3r.exe";
+	#if QT_VERSION >= 0x050000
+		//We Use QT5
+		neededFiles << "Qt5Core.dll" << "Qt5Network.dll" << "icuuc49.dll" << "icuin49.dll" << "icudt49.dll" << "upd4t3r.exe";
+		#ifdef mingw32
+		//MinGW build, we need MinGW dlls as well
+		neededFiles << "mingwm10.dll" << "libgcc_s_dw2-1.dll";
+		#endif
+	#else
+		neededFiles << "QtCore4.dll" << "QtNetwork4.dll"  << "au.exe" << "upd4t3r.exe";
+		#ifdef mingw32
+		//MinGW build, we need MinGW dlls as well
+		neededFiles << "mingwm10.dll" << "libgcc_s_dw2-1.dll";
+		#endif
+	#endif
 #endif
 
     // Check for updater folders
