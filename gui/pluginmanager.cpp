@@ -33,21 +33,21 @@ void PluginManager::loadPlugins(void)
             QPluginLoader loader(pluginDir.absoluteFilePath(fileName));
 //            QLOG_ERROR() << loader.errorString();
             QString str;
-            if (ParserPluginInterface* interface =
+            if (ParserPluginInterface* interfacev =
                     qobject_cast<ParserPluginInterface *>(loader.instance()))
             {
-                if (interface->getInterfaceRevision() == _PARSER_PLUGIN_INTERFACE_REVISION) {
-                    c.componentName = interface->getPluginName();
+                if (interfacev->getInterfaceRevision() == _PARSER_PLUGIN_INTERFACE_REVISION) {
+                    c.componentName = interfacev->getPluginName();
                     c.filename = fileName;
                     c.type = "plugin/parser";
-                    c.version = interface->getVersion();
+                    c.version = interfacev->getVersion();
 
                     components.insert(QString("%1:%2").arg(c.type).arg(c.filename), c);
-                    str.append(interface->getPluginName());
+                    str.append(interfacev->getPluginName());
                     str.append(";;;");
                     str.append(fileName);
                     pluginList.append(str);
-                    loadedPlugins.append(interface);
+                    loadedPlugins.append(interfacev);
                 }
                 else {
 
