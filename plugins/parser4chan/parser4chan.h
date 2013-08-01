@@ -11,7 +11,9 @@
 class Parser4chan : public QObject, public ParserPluginInterface {
     Q_OBJECT
     Q_INTERFACES(ParserPluginInterface)
-    Q_PLUGIN_METADATA(IID "Parser4chan" FILE "parser4chan.json")
+#if QT_VERSION >= 0x050000
+    Q_PLUGIN_METADATA(IID "Parser4chan" FILE "Parser4chan.json")
+#endif
 
 public:
     Parser4chan();

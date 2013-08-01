@@ -37,8 +37,8 @@ ParsingStatus Parser4chan::parseHTML(QString html) {
     QRegExp rxThreadsOld("<a href=\"res/(\\d+)\">Reply</a>", Qt::CaseSensitive, QRegExp::RegExp2);
     QRegExp rxTitleOld("<span class=\"filetitle\">([^<]+)</span>");
 
-    bool imagesAdded;
-    bool pageIsFrontpage;
+    //bool imagesAdded;
+    //bool pageIsFrontpage;
     int pos;
     _IMAGE i;
     QUrl u;
@@ -53,11 +53,9 @@ ParsingStatus Parser4chan::parseHTML(QString html) {
     _statusCode.hasTitle = false;
     _statusCode.isFrontpage = false;
 
-    imagesAdded = false;
     pos = 0;
     i.downloaded = false;
     i.requested = false;
-    pageIsFrontpage = false;
 
     if (html.contains("<title>4chan - Banned</title>")) {
         _statusCode.hasErrors = true;
@@ -73,7 +71,6 @@ ParsingStatus Parser4chan::parseHTML(QString html) {
                     res = rxThreadsNew.capturedTexts();
 
                     if (res.at(1) != "") {
-                        pageIsFrontpage=true;
                         u.setUrl(QString("res/%1").arg(res.at(1)));
 
                         // build complete url
@@ -94,6 +91,8 @@ ParsingStatus Parser4chan::parseHTML(QString html) {
 
                         _urlList << QUrl(sUrl);
                         _statusCode.isFrontpage = true;
+                        _threadTitle = _url.toString();
+                        _statusCode.hasTitle = true;
                     }
                 }
             }
@@ -142,7 +141,6 @@ ParsingStatus Parser4chan::parseHTML(QString html) {
                 res = rxThreadsOld.capturedTexts();
 
                 if (res.at(1) != "") {
-                    pageIsFrontpage=true;
                     u.setUrl(QString("res/%1").arg(res.at(1)));
 
                     // build complete url
@@ -196,6 +194,11 @@ ParsingStatus Parser4chan::parseHTML(QString html) {
 
             }
         }
+    }
+
+    if (_threadTitle.trimmed().isEmpty() && !_statusCode.isFrontpage) {
+        _threadTitle = QString("Thread# %1").arg(threadNumber);
+        _statusCode.hasTitle = true;
     }
 
     return _statusCode;
@@ -255,3 +258,6 @@ QMap<QString, QString> Parser4chan::getSupportedReplaceCharacters() {
     return ret;
 }
 
+#if QT_VERSION < 0x050000
+Q_EXPORT_PLUGIN2(pParser4chan, Parser4chan)
+#endif

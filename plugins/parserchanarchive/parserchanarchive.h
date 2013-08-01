@@ -8,10 +8,17 @@
 #include "../../gui/ParserPluginInterface.h"
 #include "../../gui/structs.h"
 
+struct RegExpPosition {
+    int imagelink;
+    int filename;
+};
+
 class ParserChanArchive : public QObject, public ParserPluginInterface {
     Q_OBJECT
     Q_INTERFACES(ParserPluginInterface)
-    Q_PLUGIN_METADATA(IID "ParserChanArchive" FILE "parserchanarchive.json")
+#if QT_VERSION >= 0x050000
+    Q_PLUGIN_METADATA(IID "ParserChanArchive" FILE "ParserChanArchive.json")
+#endif
 
 public:
     ParserChanArchive();

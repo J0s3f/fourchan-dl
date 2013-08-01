@@ -56,9 +56,6 @@ void UIConfig::loadSettings(void) {
     b = settings->value("remember_directory",false).toBool();
         ui->cbRememberDirectory->setChecked(b);
 
-    b = settings->value("use_thumbnail_cache",true).toBool();
-        ui->cbUseThumbnailCache->setChecked(b);
-
     ui->cbCloseOverviewThreads->setChecked(settings->value("close_overview_threads", true).toBool());
     ui->cbUseInternalViewer->setChecked(settings->value("use_internal_viewer", false).toBool());
 
@@ -141,7 +138,12 @@ void UIConfig::loadSettings(void) {
         ui->sbConcurrentDownloads->setValue(settings->value("concurrent_downloads",20).toInt());
         ui->sbDownloadTimeoutInitial->setValue(settings->value("initial_timeout",30).toInt());
         ui->sbDownloadTimeoutInbetween->setValue(settings->value("running_timeout",2).toInt());
+        ui->cbKeepLocalHTMLCopy->setChecked(settings->value("use_thread_cache", false).toBool());
+        ui->leThreadCachePath->setText(settings->value("thread_cache_path", "").toString());
     settings->endGroup();
+
+    ui->sbUpdaterPort->setValue(settings->value("updater/updater_port", 60000).toInt());
+    ui->sbApplicationPort->setValue(settings->value("updater/application_port", 60001).toInt());
 
     timeoutValueEditor->loadSettings();
 }
@@ -157,7 +159,6 @@ void UIConfig::accept(void) {
         settings->setValue("hq_thumbnails", ui->cbHQThumbnail->isChecked());
         settings->setValue("default_original_filename", ui->cbDefaultOriginalFilename->isChecked());
         settings->setValue("remember_directory", ui->cbRememberDirectory->isChecked());
-        settings->setValue("use_thumbnail_cache", ui->cbUseThumbnailCache->isChecked());
 
         settings->setValue("concurrent_downloads", ui->sbConcurrentDownloads->value());
         settings->setValue("reschedule_interval", ui->sbRescheduleInterval->value());
@@ -204,7 +205,12 @@ void UIConfig::accept(void) {
         settings->setValue("concurrent_downloads", ui->sbConcurrentDownloads->value());
         settings->setValue("initial_timeout", ui->sbDownloadTimeoutInitial->value());
         settings->setValue("running_timeout", ui->sbDownloadTimeoutInbetween->value());
+        settings->setValue("use_thread_cache", ui->cbKeepLocalHTMLCopy->isChecked());
+        settings->setValue("thread_cache_path", ui->leThreadCachePath->text());
     settings->endGroup();
+
+    settings->setValue("updater/updater_port", ui->sbUpdaterPort->value());
+    settings->setValue("updater/application_port", ui->sbApplicationPort->value());
 
     settings->sync();
 
@@ -227,9 +233,17 @@ void UIConfig::chooseLocation(void) {
 void UIConfig::chooseThumbnailCacheLocation(void) {
     QString loc;
 
-    loc = QFileDialog::getExistingDirectory(this, "Choose storage directory", ui->leThumbnailCacheFolder->text());
+    loc = QFileDialog::getExistingDirectory(this, "Choose thumbnail cache directory", ui->leThumbnailCacheFolder->text());
     if (!loc.isEmpty())
         ui->leThumbnailCacheFolder->setText(loc);
+}
+
+void UIConfig::chooseThreadCacheLocation(void) {
+    QString loc;
+
+    loc = QFileDialog::getExistingDirectory(this, "Choose thread cache directory", ui->leThreadCachePath->text());
+    if (!loc.isEmpty())
+        ui->leThreadCachePath->setText(loc);
 }
 
 void UIConfig::editTimeoutValues(void) {
@@ -286,4 +300,13 @@ void UIConfig::deleteShortcut() {
         folderShortcuts->deleteShortcut(name);
     else
         ui->listWidget->removeItemWidget(ui->listWidget->currentItem());
+}
+
+void UIConfig::toggleLogLevelWarning(QString s) {
+    if (s == "Trace") {
+        ui->lLogLevelWarning->show();
+    }
+    else {
+        ui->lLogLevelWarning->hide();
+    }
 }

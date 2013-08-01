@@ -6,7 +6,13 @@
 #include <QByteArray>
 #include <QtNetwork/QUdpSocket>
 #include <QDir>
+#include <QSettings>
+#include <QUuid>
+
+#ifdef __GUI__
 #include <QMessageBox>
+#endif
+
 #include "../updater/commands.h"
 #include "defines.h"
 #include "QsLog.h"
@@ -29,7 +35,8 @@ private:
     bool startRequest;
     QString version;
     QString fileToMoveFrom, fileToMoveTo;
-    QStringList filesToMove;
+    QHash<QString,QString> filesToMove;
+    QSettings* settings;
 
     void processCommand(QByteArray a);
     void writeCommand(int c, QByteArray a);

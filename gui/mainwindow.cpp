@@ -22,8 +22,10 @@ MainWindow::MainWindow(QWidget *parent) :
     overviewUpdateTimer->setInterval(1000);
     overviewUpdateTimer->setSingleShot(true);
     _updateOverview = false;
+    _paused = false;
 
     runUpdate = false;
+    checkUpdaterVersion = false;
 
     connect(this, SIGNAL(removeFiles(QStringList)), thumbnailRemover, SLOT(removeFiles(QStringList)));
     ui->setupUi(this);
@@ -34,6 +36,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->menuBar->addAction(ui->actionTabOverview);
 
     ui->menuBar->addAction(ui->actionStart_all);
+    ui->menuBar->addAction(ui->actionPauseAll);
     ui->menuBar->addAction(ui->actionStop_all);
 
     ui->menuBar->addAction(ui->actionOpen_Configuration);
@@ -43,6 +46,8 @@ MainWindow::MainWindow(QWidget *parent) :
     historyMenu->setTitle("History");
     historyMenu->setIcon(QIcon(":/icons/resources/remove.png"));
     ui->menuBar->addMenu(historyMenu);
+
+    ui->menuBar->addAction(ui->actionGetUpdaterVersion);
 
     ui->menuBar->addAction(ui->actionShowInfo);
 
@@ -59,7 +64,7 @@ MainWindow::MainWindow(QWidget *parent) :
     restoreWindowSettings();
     updateWidgetSettings();
 
-    connect(requestHandler, SIGNAL(response(QUrl,QByteArray)), this, SLOT(processRequestResponse(QUrl,QByteArray)));
+    connect(requestHandler, SIGNAL(response(QUrl,QByteArray,bool)), this, SLOT(processRequestResponse(QUrl,QByteArray,bool)));
     connect(requestHandler, SIGNAL(responseError(QUrl,int)), this, SLOT(handleRequestError(QUrl,int)));
 
     connect(ui->tabWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(closeTab(int)));
@@ -69,10 +74,12 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(uiConfig, SIGNAL(deleteAllThumbnails()), thumbnailRemover, SLOT(removeAll()));
     connect(ui->actionStart_all, SIGNAL(triggered()), this, SLOT(startAll()));
     connect(ui->actionStop_all, SIGNAL(triggered()), this, SLOT(stopAll()));
+    connect(ui->actionPauseAll, SIGNAL(triggered()), this, SLOT(pauseAll()));
     connect(threadAdder, SIGNAL(addTab(QString)), this, SLOT(createTab(QString)));
     connect(downloadManager, SIGNAL(error(QString)), ui->statusBar, SLOT(showMessage(QString)));
     connect(downloadManager, SIGNAL(finishedRequestsChanged(int)), this, SLOT(updateDownloadProgress()));
     connect(downloadManager, SIGNAL(totalRequestsChanged(int)), this, SLOT(updateDownloadProgress()));
+    connect(ui->tabWidget, SIGNAL(currentChanged(int)), this, SLOT(addThreadOverviewMark(int)));
 
     connect(overviewUpdateTimer, SIGNAL(timeout()), this, SLOT(overviewTimerTimeout()));
     connect(historyMenu, SIGNAL(triggered(QAction*)), this, SLOT(restoreFromHistory(QAction*)));
@@ -94,7 +101,7 @@ MainWindow::MainWindow(QWidget *parent) :
 #endif
 
 #ifdef Q_OS_WIN
-    win7.init(this->winId());
+    win7.init((HWND)this->winId());
 #endif
 
     createTrayIcon();
@@ -281,6 +288,8 @@ void MainWindow::restoreTabs() {
 void MainWindow::saveSettings(void) {
     int downloadedFiles;
     float downloadedKB;
+
+    QLOG_INFO() << "MainWindow :: Saving settings";
     // Window related stuff
     settings->beginGroup("window");
         settings->setValue("position", this->pos());
@@ -293,10 +302,10 @@ void MainWindow::saveSettings(void) {
     // Dock widget
     settings->beginGroup("thread_overview");
 //    settings->setValue("size", ui->dockWidget->size());
-    settings->setValue("col_uri_width", ui->threadOverview->columnWidth(0));
-    settings->setValue("col_name_width", ui->threadOverview->columnWidth(1));
-    settings->setValue("col_images_width", ui->threadOverview->columnWidth(2));
-    settings->setValue("col_status_width", ui->threadOverview->columnWidth(3));
+    settings->setValue("col_uri_width", ui->threadOverview->columnWidth(3));
+    settings->setValue("col_name_width", ui->threadOverview->columnWidth(0));
+    settings->setValue("col_images_width", ui->threadOverview->columnWidth(1));
+    settings->setValue("col_status_width", ui->threadOverview->columnWidth(2));
     settings->setValue("visible", ui->threadOverview->isVisible());
     settings->endGroup();
 
@@ -324,6 +333,13 @@ void MainWindow::saveSettings(void) {
 
     settings->sync();
 
+    if (settings->status() == QSettings::NoError) {
+        QLOG_INFO() << "MainWindow :: Settings saved successfully";
+    }
+    else {
+        QLOG_ERROR() << "MainWindow :: Saving settings failed";
+        QLOG_ERROR() << "MainWindow ::  error: " << settings->status();
+    }
     imageViewer->saveSettings();
 }
 
@@ -364,10 +380,10 @@ void MainWindow::loadOptions(void) {
     settings->beginGroup("thread_overview");
 //    ui->dockWidget->resize();
 //    settings->setValue("width", ui->dockWidget->width());
-    ui->threadOverview->setColumnWidth(0, settings->value("col_uri_width", 170).toInt());
-    ui->threadOverview->setColumnWidth(1, settings->value("col_name_width", 190).toInt());
-    ui->threadOverview->setColumnWidth(2, settings->value("col_images_width", 60).toInt());
-    ui->threadOverview->setColumnWidth(3, settings->value("col_status_width", 70).toInt());
+    ui->threadOverview->setColumnWidth(3, settings->value("col_uri_width", 170).toInt());
+    ui->threadOverview->setColumnWidth(0, settings->value("col_name_width", 190).toInt());
+    ui->threadOverview->setColumnWidth(1, settings->value("col_images_width", 60).toInt());
+    ui->threadOverview->setColumnWidth(2, settings->value("col_status_width", 70).toInt());
     settings->endGroup();
 }
 
@@ -385,7 +401,7 @@ void MainWindow::processCloseRequest(UIImageOverview* w, int reason) {
     }
 }
 
-void MainWindow::processRequestResponse(QUrl url, QByteArray ba) {
+void MainWindow::processRequestResponse(QUrl url, QByteArray ba, bool cached) {
 
     if (url.toString().contains("webupdate.xml")) {
         checkForUpdates(QString(ba));
@@ -419,7 +435,7 @@ void MainWindow::newComponentsAvailable() {
         msg.append("<br>");
         msg.append(QString("&nbsp;&nbsp;%1:%2 (installed: %3, available: %4)").arg(c.type).arg(c.componentName).arg(c.version).arg(c.remote_version));
     }
-    ui->statusBar->showMessage(msg);
+//    ui->statusBar->showMessage(msg);
 
 #ifdef USE_UPDATER
     msg.append("<br>Do you want to update now?");
@@ -456,6 +472,27 @@ void MainWindow::newComponentsAvailable() {
 #endif
 }
 
+void MainWindow::getUpdaterVersion() {
+#ifdef USE_UPDATER
+    QProcess process;
+    QFileInfo fi;
+
+    fi.setFile(updaterFileName);
+
+    QLOG_INFO() << "MainWindow :: Starting updater " << fi.absoluteFilePath();
+
+    checkUpdaterVersion = true;
+    if (process.startDetached(QString("\"%1\"").arg(fi.absoluteFilePath()))) {
+        ui->statusBar->showMessage("Starting updater for version check");
+    }
+    else {
+        ui->statusBar->showMessage("Unable to start process "+fi.absoluteFilePath()+" ("+process.errorString()+")");
+        checkUpdaterVersion = false;
+    }
+
+#endif
+}
+
 void MainWindow::startAll() {
     ui->pbOpenRequests->setFormat("Starting Thread %v/%m (%p%)");
     ui->pbOpenRequests->setMaximum(ui->tabWidget->count());
@@ -464,6 +501,21 @@ void MainWindow::startAll() {
         ((UIImageOverview*)ui->tabWidget->widget(i))->start();
         ui->pbOpenRequests->setValue((i+1));
     }
+}
+
+void MainWindow::pauseAll() {
+    if (_paused) {
+        ui->actionPauseAll->setIcon(QIcon(":/icons/resources/media-playback-pause.png"));
+        downloadManager->resumeDownloads();
+        tnt->resume();
+    }
+    else {
+        ui->actionPauseAll->setIcon(QIcon(":/icons/resources/media-playback-pause-red.png"));
+        downloadManager->pauseDownloads();
+        tnt->halt();
+    }
+
+    _paused = !_paused;
 }
 
 void MainWindow::stopAll() {
@@ -493,7 +545,7 @@ void MainWindow::addMultipleTabs() {
     threadAdder->show();
 }
 
-void MainWindow::showTab(QTreeWidgetItem* item, int column) {
+void MainWindow::showTab(QTreeWidgetItem* item, int idx) {
     int index;
 
     index = ui->threadOverview->indexOfTopLevelItem(item);
@@ -535,10 +587,10 @@ void MainWindow::updateThreadOverview() {
             sl.clear();
 
             tab = (UIImageOverview*)(ui->tabWidget->widget(i));
-            sl << tab->getURI();
             sl << tab->getTitle();
             sl << QString("%1/%2").arg(tab->getDownloadedImagesCount()).arg(tab->getTotalImagesCount());
             sl << tab->getStatus();
+            sl << tab->getURI();
 
             if (ui->threadOverview->topLevelItemCount() > i) {                   // If there is an entry for the i-th tab
                 item = ui->threadOverview->topLevelItem(i);     //  change its content
@@ -647,13 +699,9 @@ void MainWindow::removeSupervisedDownload(QUrl url) {
     requestHandler->cancel(url);
 }
 
-void MainWindow::handleRequestError(QUrl url, int error) {
-
-}
-
 void MainWindow::checkForUpdates(QString xml) {
     QRegExp rx(QString("<%1>([\\w\\W]+[^<])+</%1>").arg(UPDATE_TREE), Qt::CaseInsensitive, QRegExp::RegExp2);
-    QRegExp rxFile("<file name=\"([^\\\"]+)\" filename=\"([\\w\\.\\-_]+)\" type=\"([^\\\"]+)\" version=\"([\\w\\.]*)\" source=\"([\\w:\\-\\./]+)\" target=\"([\\w\\.\\-/]*)\" />", Qt::CaseInsensitive, QRegExp::RegExp2);
+    QRegExp rxFile("<file name=\"([^\\\"]+)\" filename=\"([^\\\"]+)\" type=\"([^\\\"]+)\" version=\"([\\w\\.]*)\" source=\"([\\w:\\-\\./\\+]+)\" target=\"([^\\\"]+)\" />", Qt::CaseInsensitive, QRegExp::RegExp2);
     int pos, posFile;
     QStringList res, resFile;
     QMap<QString, component_information> comp;
@@ -753,13 +801,20 @@ void MainWindow::createComponentList() {
     QString version;
 #endif
 
-    qtFiles << "QtCore4" << "QtGui4" << "QtNetwork4" << "QtXml4";
-
 #ifdef Q_OS_WIN32
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
+    qtFiles << "Qt5Core" << "Qt5Gui" << "Qt5Widgets" << "Qt5Network" << "Qt5Xml";
+    neededLibraries << "libeay32.dll" << "ssleay32.dll" << "libstdc++-6.dll" << "imageformats/qgif.dll"
+                    << "imageformats/qico.dll" << "imageformats/qjpeg.dll" << "imageformats/qsvg.dll"
+                    << "libgcc_s_sjlj-1.dll" << "libwinpthread-1.dll";
+
+#else
+    qtFiles << "QtCore4" << "QtGui4" << "QtNetwork4" << "QtXml4";
     neededLibraries << "libeay32.dll" << "ssleay32.dll" << "imageformats/qgif4.dll"
                     << "imageformats/qico4.dll" << "imageformats/qjpeg4.dll"
                     << "imageformats/qmng4.dll" << "imageformats/qsvg4.dll"
                     << "imageformats/qtiff4.dll";
+#endif
 #endif
 
     components.clear();
@@ -783,6 +838,14 @@ void MainWindow::createComponentList() {
         else {
             QLOG_WARN() << "Mainwidow :: createComponentList :: Needed library " << libFile << "does not exist.";
         }
+    }
+
+    if (QFile::exists(QString("%1/%2").arg(QApplication::applicationDirPath()).arg(CONSOLE_APPNAME))) {
+        c.filename = CONSOLE_APPNAME;
+        c.componentName = "Console";
+        c.type = "executable";
+        c.version = settings->value("console/version", "0.1.0").toString();
+        components.insert(QString("%1:%2").arg(c.type).arg(c.filename), c);
     }
 
 #ifdef USE_UPDATER
@@ -835,13 +898,27 @@ void MainWindow::updaterConnected() {
     QStringList fileList;
     component_information c;
 
-    if (runUpdate) {
-        foreach (QString component, updateableComponents) {
-            c = components.value(component);
-            fileList.append(QString("%1->%2").arg(c.src).arg(c.target));
+    if (checkUpdaterVersion) {
+        QLOG_INFO() << "Mainwidow :: updaterConnected :: Just checking updater version";
+        aui->closeUpdaterExe();
+        checkUpdaterVersion = false;
+    }
+    else {
+        if (runUpdate) {
+            tnt->halt();
+            downloadManager->pauseDownloads();
+
+            foreach (QString component, updateableComponents) {
+                c = components.value(component);
+                fileList.append(QString("%1->%2").arg(c.src).arg(c.target));
+            }
+            aui->addFiles(fileList);
+            aui->startUpdate();
         }
-        aui->addFiles(fileList);
-        aui->startUpdate();
+        else {
+            QLOG_WARN() << "Mainwidow :: updaterConnected :: Updater connected, but I didn't know what to do";
+            aui->closeUpdaterExe();
+        }
     }
 }
 
@@ -947,7 +1024,68 @@ void MainWindow::toggleThreadOverview() {
 }
 
 void MainWindow::aboutToQuit() {
+    downloadManager->pauseDownloads();
+    tnt->halt();
+    tnt->deleteLater();
     saveSettings();
     removeTrayIcon();
+    cleanThreadCache();
     thumbnailRemoverThread->terminate();
+
+    emit quitAll();
+}
+
+void MainWindow::removeThreadOverviewMark() {
+    for (int i=0; i<ui->threadOverview->topLevelItemCount(); i++) {
+        ui->threadOverview->topLevelItem(i)->setIcon(0, QIcon());
+    }
+}
+
+void MainWindow::addThreadOverviewMark(QTreeWidgetItem* item) {
+    removeThreadOverviewMark();
+
+    item->setIcon(0, QIcon(":/icons/resources/go-next.png"));
+}
+
+void MainWindow::addThreadOverviewMark(int index) {
+    QList<QTreeWidgetItem*> foundItems;
+
+    foundItems = ui->threadOverview->findItems(((UIImageOverview*)(ui->tabWidget->widget(index)))->getURI(), Qt::MatchExactly, 3 );
+    if (foundItems.count() == 1) {
+        addThreadOverviewMark(foundItems.at(0));
+    }
+}
+
+void MainWindow::cleanThreadCache() {
+    QStringList threadCachesToRemove;
+    QStringList dirContents;
+    QString cacheFolder;
+    QString url;
+    QString cacheFile;
+    QDir dir;
+
+    if (settings->value("download_manager/use_thread_cache", false).toBool()) {
+        cacheFolder = settings->value("download_manager/thread_cache_path", "").toString();
+
+        if (!cacheFolder.isEmpty()) {
+            dir.setPath(cacheFolder);
+            if (dir.isReadable()) {
+                dirContents = dir.entryList(QStringList() << "*.tcache");
+            }
+        }
+
+        foreach (cacheFile, dirContents) {
+            threadCachesToRemove << QString("%1/%2").arg(cacheFolder, cacheFile);
+        }
+
+        for (int i=0; i<ui->tabWidget->count(); i++) {
+            url = ((UIImageOverview*)ui->tabWidget->widget(i))->getURI();
+            cacheFile = downloadManager->getFilenameForURL(QUrl(url));
+            threadCachesToRemove.removeAll(cacheFile);
+        }
+
+        foreach (cacheFile, threadCachesToRemove) {
+            QFile::remove(cacheFile);
+        }
+    }
 }

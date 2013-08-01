@@ -5,15 +5,18 @@
 #define APP_NAME        "fourchan-dl.exe"
 #define UPDATE_TREE     "win32"
 #define USE_UPDATER
+#define CONSOLE_APPNAME "fourchan-dl-console.exe"
 #else
 #ifdef Q_OS_LINUX
 #define APP_NAME        "fourchan-dl"
 #define UPDATE_TREE     "linux"
 //#define UPDATER_NAME    "au"
 //#define USE_UPDATER
+#define CONSOLE_APPNAME "fourchan-dl-console"
 #else
 #define APP_NAME        ""
 #define UPDATE_TREE     "source"
+#define CONSOLE_APPNAME "fourchan-dl-console"
 #endif
 #endif
 

@@ -35,7 +35,7 @@
     <item row="1" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="tabPosition">
-       <enum>QTabWidget::East</enum>
+       <enum>QTabWidget::North</enum>
       </property>
       <property name="tabShape">
        <enum>QTabWidget::Rounded</enum>
@@ -47,7 +47,7 @@
        <bool>true</bool>
       </property>
       <property name="movable">
-       <bool>true</bool>
+       <bool>false</bool>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -94,11 +94,6 @@
       <widget class="QTreeWidget" name="threadOverview">
        <column>
         <property name="text">
-         <string>URI</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
          <string>Name</string>
         </property>
        </column>
@@ -110,6 +105,11 @@
        <column>
         <property name="text">
          <string>Status</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>URI</string>
         </property>
        </column>
       </widget>
@@ -278,6 +278,36 @@
     <string>Ctrl+Q</string>
    </property>
   </action>
+  <action name="actionPauseAll">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/resources/media-playback-pause.png</normaloff>:/icons/resources/media-playback-pause.png</iconset>
+   </property>
+   <property name="text">
+    <string>PauseAll</string>
+   </property>
+   <property name="toolTip">
+    <string>Pause downloads and thumbnail creation</string>
+   </property>
+   <property name="statusTip">
+    <string>Pause downloads and thumbnail creation</string>
+   </property>
+  </action>
+  <action name="actionGetUpdaterVersion">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/resources/reload.png</normaloff>:/icons/resources/reload.png</iconset>
+   </property>
+   <property name="text">
+    <string>Get updater version</string>
+   </property>
+   <property name="statusTip">
+    <string>Get updater version</string>
+   </property>
+   <property name="whatsThis">
+    <string>Get updater version</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources>
@@ -412,6 +442,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionGetUpdaterVersion</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>getUpdaterVersion()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>342</x>
+     <y>304</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>addTab()</slot>
@@ -423,5 +469,6 @@
   <slot>debugButton()</slot>
   <slot>addForegroundTab()</slot>
   <slot>toggleThreadOverview()</slot>
+  <slot>getUpdaterVersion()</slot>
  </slots>
 </ui>
